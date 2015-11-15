@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            body {
+                background-color: #DDD;
+            }
+
+            canvas {
+                background-color: #FFF;
+                width: 400px;
+                height: 300px;
+            }
+        </style>
+
+        <script>
+            var sprite,
+                canvas,
+                canvasContext,
+                character = {
+                    sprite: 'assets/axel-stone.png',
+                    animations: {
+                        'walk': {
+                            activeCell: {
+                                index: -1,
+                                timestamp: 0
+                            },
+                            cells: [
+                                { x:27, y:109, width:25, height:79, offsetX:-9, offsetY:0, duration: 150 },
+                                { x:84, y:109, width:26, height:78, offsetX:-9, offsetY:0, duration: 150 },
+                                { x:142, y:110, width:46, height:78, offsetX:-18, offsetY:0, duration: 150 },
+                                { x:214, y:108, width:25, height:80, offsetX:-9, offsetY:0, duration: 150 },
+                                { x:269, y:108, width:26, height:79, offsetX:-8, offsetY:0, duration: 150 },
+                                { x:318, y:109, width:44, height:78, offsetX:-16, offsetY:0, duration: 150 }
+                            ]
+                        }
+                    }
+                };
+
+            function run () {
+                canvas = document.querySelector('canvas');
+                canvasContext = canvas.getContext('2d');
+
+                loadImage();
+            }
+
+            function loadImage () {
+                sprite = new Image();
+                sprite.onload = scheduleFrame;
+
+                sprite.src = character.sprite;
+            }
+
+            function scheduleFrame () {
+                window.requestAnimationFrame(renderFrame);
+            }
+
+            function renderFrame (timestamp) {
+                var animation  = character.animations.walk,
+                    activeCell = animation.activeCell,
+                    nextCellIndex;
+
+                if (activeCell.index == -1 || timestamp - activeCell.timestamp >= animation.cells[activeCell.index].duration) {
+                    if (activeCell.index == animation.cells.length - 1) {
+                        nextCellIndex = 0
+                    } else {
+                        nextCellIndex = activeCell.index + 1;
+                    }
+
+                    canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+
+                    canvasContext.drawImage(sprite,
+                        animation.cells[nextCellIndex].x, animation.cells[nextCellIndex].y,
+                        animation.cells[nextCellIndex].width, animation.cells[nextCellIndex].height,
+                        150 + animation.cells[nextCellIndex].offsetX, 100,
+                        animation.cells[nextCellIndex].width, animation.cells[nextCellIndex].height
+                    );
+
+                    activeCell.index = nextCellIndex;
+                    activeCell.timestamp = timestamp;
+                }
+
+                scheduleFrame();
+            }
+
+            window.addEventListener('DOMContentLoaded', run);
+        </script>
+    </head>
+    <body>
+        <canvas width="400" height="300"></canvas>
+    </body>
+</html>
