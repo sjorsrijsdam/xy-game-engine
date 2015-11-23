@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            body {
+                background-color: #DDD;
+            }
+
+            canvas {
+                background-color: #FFF;
+                width: 400px;
+                height: 300px;
+            }
+        </style>
+
+        <script>
+            var sprite,
+                canvas,
+                canvasContext,
+                character;
+
+            function run () {
+                canvas = document.querySelector('canvas');
+                canvasContext = canvas.getContext('2d');
+
+                loadImage('assets/axel-stone.png', function () {
+                    createCharacter();
+                    scheduleFrame();
+                });
+
+                addControls();
+            }
+
+            function createCharacter () {
+                character = {
+                    position: {
+                        x: 100,
+                        y: 0
+                    },
+                    activeAnimation: {
+                        type: 'idle_right',
+                        index: -1,
+                        timestamp: 0
+                    },
+                    animations: {
+                        'idle_right': {
+                            cells: [
+                                { offsetX:1,  offsetY:5, duration: 150, sprite: createCell(19,  21, 37, 74, false) },
+                                { offsetX:-2, offsetY:1, duration: 150, sprite: createCell(85,  16, 38, 78, false) },
+                                { offsetX:0,  offsetY:0, duration: 150, sprite: createCell(148, 15, 38, 79, false) },
+                                { offsetX:1,  offsetY:1, duration: 150, sprite: createCell(207, 16, 38, 78, false) }
+                            ]
+                        },
+                        'idle_left': {
+                            cells: [
+                                { offsetX:-1, offsetY:5, duration: 150, sprite: createCell(19,  21, 37, 74, true) },
+                                { offsetX:2,  offsetY:1, duration: 150, sprite: createCell(85,  16, 38, 78, true) },
+                                { offsetX:0,  offsetY:0, duration: 150, sprite: createCell(148, 15, 38, 79, true) },
+                                { offsetX:-1, offsetY:1, duration: 150, sprite: createCell(207, 16, 38, 78, true) }
+                            ]
+                        },
+                        'walk_right': {
+                            cells: [
+                                { offsetX:20, offsetY:1, duration: 150, sprite: createCell(27,  109, 25, 79, false) },
+                                { offsetX:6,  offsetY:2, duration: 150, sprite: createCell(84,  109, 26, 78, false) },
+                                { offsetX:5,  offsetY:2, duration: 150, sprite: createCell(142, 110, 46, 78, false) },
+                                { offsetX:23, offsetY:0, duration: 150, sprite: createCell(214, 108, 25, 80, false) },
+                                { offsetX:8,  offsetY:1, duration: 150, sprite: createCell(269, 108, 26, 79, false) },
+                                { offsetX:0,  offsetY:2, duration: 150, sprite: createCell(318, 109, 44, 78, false) }
+                            ]
+                        },
+                        'walk_left': {
+                            cells: [
+                                { offsetX:-6,  offsetY:1, duration: 150, sprite: createCell(27,  109, 25, 79, true) },
+                                { offsetX:-7,  offsetY:2, duration: 150, sprite: createCell(84,  109, 26, 78, true) },
+                                { offsetX:-26, offsetY:2, duration: 150, sprite: createCell(142, 110, 46, 78, true) },
+                                { offsetX:-2,  offsetY:0, duration: 150, sprite: createCell(214, 108, 25, 80, true) },
+                                { offsetX:-9,  offsetY:1, duration: 150, sprite: createCell(269, 108, 26, 79, true) },
+                                { offsetX:-20, offsetY:2, duration: 150, sprite: createCell(318, 109, 44, 78, true) }
+                            ]
+                        }
+                    }
+                };
+            }
+
+            function loadImage (url, callback) {
+                sprite = new Image();
+                sprite.onload = callback;
+
+                sprite.src = url;
+            }
+
+            function createCell (x, y, width, height, flip) {
+                var canvas = document.createElement('canvas'),
+                    context = canvas.getContext('2d');
+
+                canvas.width = width;
+                canvas.height = height;
+
+                if (flip) {
+                    context.translate(width, 0);
+                    context.scale(-1, 1);
+                }
+
+                context.drawImage(sprite,
+                    x, y,
+                    width, height,
+                    0, 0,
+                    width, height
+                );
+
+                return canvas;
+            }
+
+            function setAnimation (type) {
+                if (character.activeAnimation.type != type) {
+                    character.activeAnimation.type = type;
+                    character.activeAnimation.index = -1;
+                    character.activeAnimation.timestamp = 0;
+                }
+            }
+
+            function addControls () {
+                window.addEventListener('keydown', function (evt) {
+                    var keyCode = evt.keyCode || evt.which;
+
+                    if (keyCode == 39) { // arrow right
+                        setAnimation('walk_right');
+                    } else if (keyCode == 37) { // arrow left
+                        setAnimation('walk_left');
+                    }
+                });
+
+                window.addEventListener('keyup', function (evt) {
+                    var keyCode = evt.keyCode || evt.which;
+
+                    if (keyCode == 39) { // arrow right
+                        setAnimation('idle_right');
+                    } else if (keyCode == 37) { // arrow left
+                        setAnimation('idle_left');
+                    }
+                });
+            }
+
+            function scheduleFrame () {
+                window.requestAnimationFrame(renderFrame);
+            }
+
+            function renderFrame (timestamp) {
+                var animation  = character.animations[character.activeAnimation.type],
+                    nextCellIndex,
+                    nextCell;
+
+                if (character.activeAnimation.index == -1 || timestamp - character.activeAnimation.timestamp >= animation.cells[character.activeAnimation.index].duration) {
+                    if (character.activeAnimation.index == animation.cells.length - 1) {
+                        nextCellIndex = 0
+                    } else {
+                        nextCellIndex = character.activeAnimation.index + 1;
+                    }
+
+                    nextCell = animation.cells[nextCellIndex];
+
+                    character.position.x += nextCell.offsetX;
+
+                    if (character.position.x > 350) {
+                        character.position.x = 50;
+                    } else if (character.position.x < 50) {
+                        character.position.x = 350;
+                    }
+
+                    canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+
+                    canvasContext.drawImage(nextCell.sprite,
+                        0, 0,
+                        nextCell.sprite.width, nextCell.sprite.height,
+                        character.position.x, 100 + nextCell.offsetY,
+                        nextCell.sprite.width, nextCell.sprite.height
+                    );
+
+                    character.activeAnimation.index = nextCellIndex;
+                    character.activeAnimation.timestamp = timestamp;
+                }
+
+                scheduleFrame();
+            }
+
+            window.addEventListener('DOMContentLoaded', run);
+        </script>
+    </head>
+    <body>
+        <canvas width="400" height="300"></canvas>
+    </body>
+</html>
